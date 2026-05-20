@@ -63,7 +63,7 @@ def load_model():
 model = load_model()
 
 st.title("💳 Premium Credit Risk Analysis System")
-st.markdown("Evaluate credit applications in real-time using an advanced XGBoost model. This system is heavily optimized to detect high-risk applicants, incorporating a 5:1 asymmetrical cost matrix to prevent costly defaults.")
+st.markdown("Evaluate credit applications in real-time using an advanced LightGBM model. This system leverages machine learning to assess credit risk with balanced accuracy optimization.")
 
 if not model:
     st.error("⚠️ Model artifact `model.joblib` not found. Please run `train.py` first to bake the model.")
@@ -75,7 +75,7 @@ col1, col2 = st.columns([1, 1], gap="large")
 with col1:
     st.header("👤 Applicant Profile")
     
-    age = st.slider("Age (years)", min_value=18, max_value=100, value=30, step=1)
+    age = st.number_input("Age (years)", min_value=18, max_value=100, value=30, step=1)
     sex = st.selectbox("Sex", options=["male", "female"])
     
     job_desc = st.selectbox(
@@ -95,8 +95,8 @@ with col1:
 with col2:
     st.header("🏦 Financial Details")
     
-    credit_amount = st.slider("Requested Credit Amount", min_value=250, max_value=20000, value=2500, step=50, format="$%d")
-    duration = st.slider("Duration of Credit (months)", min_value=4, max_value=72, value=12, step=1)
+    credit_amount = st.number_input("Requested Credit Amount ($)", min_value=250, max_value=20000, value=2500, step=50)
+    duration = st.number_input("Duration of Credit (months)", min_value=4, max_value=72, value=12, step=1)
     
     purpose = st.selectbox("Purpose of Credit", options=[
         "radio/TV", "education", "furniture/equipment", "car", 
@@ -122,6 +122,13 @@ if st.button("Predict Risk Verdict", use_container_width=True):
         'Duration': [duration],
         'Purpose': [purpose]
     })
+    
+    # Add engineered features (same as in train.py)
+    input_data['Age_CreditRatio'] = input_data['Age'] / (input_data['Credit amount'] / 1000 + 1)
+    input_data['Duration_CreditRatio'] = input_data['Duration'] / (input_data['Credit amount'] / 1000 + 1)
+    input_data['CreditAmount_Duration'] = input_data['Credit amount'] / (input_data['Duration'] + 1)
+    input_data['Age_Duration'] = input_data['Age'] / (input_data['Duration'] + 1)
+    input_data['Credit_per_month'] = input_data['Credit amount'] / (input_data['Duration'] + 1)
     
     try:
         # Get probability of class 1 (Bad Risk)
